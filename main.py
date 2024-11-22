@@ -1,17 +1,14 @@
 import logging
 from pymongo import MongoClient
 
-# Conectar ao MongoDB (localhost na porta padrão 27017)
 client = MongoClient("mongodb://localhost:27017/")
 db = client['EcoJourneyDB']
 colecao = db['EcoJourney']
 
 print('Olá, seja bem-vindo(a) à EcoJourney!')
 
-# Configuração de log
 logging.basicConfig(filename='eco_journey.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Estruturas de Dados
 missao_diaria = ["Economize 10 litros de água", "Use bicicleta por 30 minutos", "Recicle 5 objetos"]
 missao_mensal = ["Utilizar energia solar", "Utilizar transporte elétrico 15 dias do mês", "Ajudar uma ONG de energia sustentavel"]
 
@@ -23,7 +20,6 @@ recompensas = [
 
 nivel_pontuacao = [0, 150, 300, 800, 1500]
 
-# Ranking fictício com top 5 usuários (nome e pontos)
 ranking = [
     {"nome": "GreenWarrior", "pontos": 1000},
     {"nome": "EcoChampion", "pontos": 950},
@@ -76,7 +72,7 @@ def salvar_usuario(user, senha, pontos):
         "nivel": nivel,
         "missoes_completas": [],
         "recompensas_resgatadas": [],
-        "posicao_ranking": None  # Atualizado ao exibir ranking
+        "posicao_ranking": None  
     })
     logging.info(f"Usuário {user} salvo no banco de dados com nível {nivel}.")
     return True
@@ -125,23 +121,18 @@ def exibir_nivel(pontos):
     logging.info(f"Exibido nível {nivel} para o usuário com {pontos} pontos.")
 
 def chave_ordenacao(usuario):
-    """Função para retornar a chave de ordenação (pontos)"""
     return usuario["pontos"]
 
 def exibir_ranking(pontos, user):
     print("\n--- Ranking de Referência ---")
     
-    # Exibir os 5 usuários do ranking de referência
     for i, usuario in enumerate(ranking, start=1):
         print(f"{i}. {usuario['nome']} - {usuario['pontos']} pontos")
     
-    # Recuperar todos os usuários do banco de dados ordenados por pontos em ordem decrescente
     usuarios_banco = list(colecao.find().sort("pontos", -1))
-    
-    # Combinar os rankings (referência + banco)
+
     ranking_total = ranking + [{"nome": u["usuario"], "pontos": u["pontos"]} for u in usuarios_banco]
     
-    # Remover duplicatas (priorizando os do ranking de referência) e ordenar por pontos
     usuarios_unicos = {}
     for usuario in ranking_total:
         if usuario["nome"] not in usuarios_unicos:
@@ -149,16 +140,13 @@ def exibir_ranking(pontos, user):
     
     ranking_ordenado = sorted(usuarios_unicos.values(), key=chave_ordenacao, reverse=True)
     
-    # Calcular a posição do usuário logado
     posicao = next((i + 1 for i, u in enumerate(ranking_ordenado) if u['nome'] == user), len(ranking_ordenado) + 1)
     
-    # Atualizar a posição no banco de dados
     colecao.update_one({"usuario": user}, {"$set": {"posicao_ranking": posicao}})
     
     print(f"\nSua pontuação atual: {pontos} pontos.")
     print(f"Você está na posição {posicao} do ranking.\n")
     logging.info(f"Usuário {user} está na posição {posicao} do ranking com {pontos} pontos.")
-
 
 
 def missao_pontos(user, pontos):
